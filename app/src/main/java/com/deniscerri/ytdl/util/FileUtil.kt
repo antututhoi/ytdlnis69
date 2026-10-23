@@ -98,7 +98,9 @@ object FileUtil {
         if (isForeignProvider(dataValue)) {
             // Folder chosen with another file manager (e.g. MiXplorer): show its own folder id.
             return runCatching {
-                val treeId = android.provider.DocumentsContract.getTreeDocumentId(dataValue.toUri())
+                val u = dataValue.toUri()
+                val treeId = if (dataValue.contains("/document/")) android.provider.DocumentsContract.getDocumentId(u)
+                             else android.provider.DocumentsContract.getTreeDocumentId(u)
                 URLDecoder.decode(treeId, StandardCharsets.UTF_8.name())
             }.getOrDefault(dataValue)
         }

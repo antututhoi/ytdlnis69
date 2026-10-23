@@ -37,6 +37,7 @@ object MiXplorerPicker {
 
     private const val BROWSE = "com.mixplorer.activities.BrowseActivity"
     private const val PICK_DIRECTORY = "org.openintents.action.PICK_DIRECTORY"
+    private const val LAST_FOLDER_KEY = "mixplorer_last_folder"
 
     @Volatile
     private var pickingFolder = false
@@ -59,6 +60,60 @@ object MiXplorerPicker {
         }
         if (roots.none { it.startsWith("/storage/emulated/") }) roots.add(0, "/storage/emulated/0")
         return roots.distinct()
+    }
+
+    /** Id of the child folder of [parentId] named [name], or null. */
+    private fun findChild(context: Context, treeUri: Uri, parentId: String, name: String): String? {
+        val children = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentId)
+        return runCatching {
+            context.contentResolver.query(
+                children,
+                arrayOf(
+                    android.provider.DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                    android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                    android.provider.DocumentsContract.Document.COLUMN_MIME_TYPE
+                ),
+                null, null, null
+            )?.use { c ->
+                var found: String? = null
+                while (c.moveToNext()) {
+                    if (c.getString(1) == name &&
+                        c.getString(2) == android.provider.DocumentsContract.Document.MIME_TYPE_DIR
+                    ) { found = c.getString(0); break }
+                }
+                found
+            }
+        }.getOrNull()
+    }
+
+    /**
+     * Cloud folders (e.g. rclone through RSAF) have no real path. If the app was given access to the
+     * drive once with the system chooser, find the same folder inside that access and return a link to it.
+     */
+    private fun findInGrantedFolders(context: Context, relative: String): String? {
+        val parts = relative.split('/').filter { it.isNotEmpty() }
+        if (parts.isEmpty()) return null
+        val grants = context.contentResolver.persistedUriPermissions
+            .filter { it.isWritePermission }
+            .map { it.uri }
+            .filter { !it.authority.orEmpty().startsWith("com.mixplorer") }
+            .filter { runCatching { android.provider.DocumentsContract.getTreeDocumentId(it) }.isSuccess }
+        // MiXplorer's storage may start at the drive's top folder or one level above it.
+        val tries = listOf(parts, parts.drop(1)).filter { it.isNotEmpty() }
+        for (tree in grants) {
+            val rootId = android.provider.DocumentsContract.getTreeDocumentId(tree)
+            for (segments in tries) {
+                var id: String? = rootId
+                for (name in segments) {
+                    id = findChild(context, tree, id!!, name)
+                    if (id == null) break
+                }
+                if (id != null && id != rootId) {
+                    return android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, id).toString()
+                }
+            }
+        }
+        return null
     }
 
     /**
@@ -85,7 +140,7 @@ object MiXplorerPicker {
             val f = java.io.File(root, relative)
             if (f.isDirectory) return f.absolutePath
         }
-        return null
+        return findInGrantedFolders(context, relative)
     }
 
     private fun toast(context: Context, text: String) {
@@ -111,7 +166,13 @@ object MiXplorerPicker {
 
         if (intent.action == Intent.ACTION_OPEN_DOCUMENT_TREE) {
             pickingFolder = true
-            return Intent(PICK_DIRECTORY).setClassName(pkg, BROWSE)
+            val pick = Intent(PICK_DIRECTORY).setClassName(pkg, BROWSE)
+            // Start at the last folder chosen here. "directory:" is used because Android blocks "file:" addresses.
+            val last = PreferenceManager.getDefaultSharedPreferences(context).getString(LAST_FOLDER_KEY, null)
+            if (!last.isNullOrBlank() && java.io.File(last).isDirectory) {
+                pick.data = Uri.Builder().scheme("directory").path(last).build()
+            }
+            return pick
         }
         return Intent(intent).setClassName(pkg, BROWSE)
     }
@@ -130,8 +191,18 @@ object MiXplorerPicker {
             else -> null
         }
         if (path == null && uri.authority.orEmpty().startsWith("com.mixplorer")) {
-            appContext?.let { toast(it, "Could not read the folder from MiXplorer: $uri") }
+            appContext?.let {
+                android.widget.Toast.makeText(
+                    it,
+                    "Cloud/rclone folder: give the app access once (turn off \"Use MiXplorer\", pick the drive top folder in the system chooser, turn it back on), then pick again with MiXplorer.",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
             return null
+        }
+        if (path != null && path.startsWith("content://")) return Intent().setData(Uri.parse(path))
+        if (path != null) appContext?.let {
+            PreferenceManager.getDefaultSharedPreferences(it).edit().putString(LAST_FOLDER_KEY, path.trimEnd('/')).apply()
         }
         return if (path != null) Intent().setData(Uri.parse(path.trimEnd('/'))) else data
     }
