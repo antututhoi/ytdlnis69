@@ -20,9 +20,20 @@ jobs:
           distribution: 'corretto'
           cache: 'gradle'
 
+      - name: Prepare signing key (same key every build, so updates install over the old app)
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/my.keystore"
+            printf 'signingConfig.storeFile=%s\nsigningConfig.storePassword=ytdlnis123\nsigningConfig.keyAlias=key0\nsigningConfig.keyPassword=ytdlnis123\n' "$GITHUB_WORKSPACE/my.keystore" > keystore.properties
+          else
+            echo "No KEYSTORE_B64 secret found, using a temporary key"
+            touch keystore.properties
+          fi
+
       - name: Build
         run: |
-          touch keystore.properties
           touch local.properties
           chmod +x gradlew
           ./gradlew assembleGithubRelease --warning-mode all
