@@ -35,41 +35,50 @@ object MiXplorerPicker {
     fun isEnabled(context: Context): Boolean =
         PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PREF_KEY, true)
 
+    private const val BROWSE = "com.mixplorer.activities.BrowseActivity"
+    private const val PICK_DIRECTORY = "org.openintents.action.PICK_DIRECTORY"
+
+    @Volatile
+    private var pickingFolder = false
+
     private fun toast(context: Context, text: String) {
         android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
     }
 
     /**
-     * Files: the request is sent straight to MiXplorer (it answers OPEN_DOCUMENT / CREATE_DOCUMENT).
-     * Folders: MiXplorer does not return a folder to other apps, so the system chooser is used,
-     * pointed at MiXplorer's storage entry (its document provider) when it is installed and switched on.
+     * Opens MiXplorer's own screen directly.
+     * Folders use MiXplorer's "pick directory" mode; files use the normal open/create request.
+     * No start folder is passed, so MiXplorer opens where it was used last.
+     * (An earlier try passed a file:// start folder, which Android blocks and made the app restart.)
      */
     fun prepare(context: Context, intent: Intent): Intent {
+        pickingFolder = false
         if (intent.action !in ACTIONS || !isEnabled(context)) return intent
-        val pkg = PACKAGES.firstOrNull { isResolvable(context, it) } ?: return intent
+        val pkg = PACKAGES.firstOrNull { pkg ->
+            runCatching {
+                context.packageManager.getActivityInfo(android.content.ComponentName(pkg, BROWSE), 0)
+                true
+            }.getOrDefault(false)
+        } ?: return intent
 
         if (intent.action == Intent.ACTION_OPEN_DOCUMENT_TREE) {
-            val copy = Intent(intent)
-            if (android.os.Build.VERSION.SDK_INT >= 26) {
-                runCatching {
-                    val authority = "com.mixplorer.doc"
-                    copy.putExtra(
-                        android.provider.DocumentsContract.EXTRA_INITIAL_URI,
-                        android.provider.DocumentsContract.buildRootUri(authority, "primary")
-                    )
-                }
-            }
-            toast(context, "Choose MiXplorer in the side menu (turn on its Document provider first)")
-            return copy
+            pickingFolder = true
+            return Intent(PICK_DIRECTORY).setClassName(pkg, BROWSE)
         }
+        return Intent(intent).setClassName(pkg, BROWSE)
+    }
 
-        // Address MiXplorer's browser screen directly, so the file type does not need to match its filters.
-        val copy = Intent(intent).setClassName(pkg, "com.mixplorer.activities.BrowseActivity")
-        val known = runCatching {
-            context.packageManager.getActivityInfo(copy.component!!, 0)
-            true
-        }.getOrDefault(false)
-        return if (known) copy else intent
+    /** MiXplorer answers a folder pick with a file path; the app accepts a plain /storage/... path as a folder. */
+    private fun normalize(data: Intent?): Intent? {
+        val folder = pickingFolder
+        pickingFolder = false
+        if (!folder || data == null) return data
+        val uri = data.data ?: return data
+        val path = when (uri.scheme) {
+            "file", null, "folder", "directory" -> uri.path
+            else -> null
+        }
+        return if (path != null) Intent().setData(Uri.parse(path.trimEnd('/'))) else data
     }
 
     /** Replacement for ActivityResultContracts.StartActivityForResult() at picker launch sites. */
@@ -77,7 +86,7 @@ object MiXplorerPicker {
         override fun createIntent(context: Context, input: Intent): Intent = prepare(context, input)
 
         override fun parseResult(resultCode: Int, intent: Intent?): ActivityResult =
-            ActivityResult(resultCode, intent)
+            ActivityResult(resultCode, normalize(intent))
     }
 
     /** Folder picker contract that keeps the grant across restarts. */
@@ -91,6 +100,9 @@ object MiXplorerPicker {
                             Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
                 )
             )
+
+        override fun parseResult(resultCode: Int, intent: Intent?): Uri? =
+            if (resultCode == android.app.Activity.RESULT_OK) normalize(intent)?.data else null
     }
 
     /** File picker contract for opening one document. */
