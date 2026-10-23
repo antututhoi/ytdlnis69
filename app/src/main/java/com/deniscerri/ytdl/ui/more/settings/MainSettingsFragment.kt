@@ -256,16 +256,15 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    private var backupPathResultLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
+    \1com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let {
-                activity?.contentResolver?.takePersistableUriPermission(
+                runCatching { activity?.contentResolver?.takePersistableUriPermission(
                     it,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or
                             Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
+                ) }
             }
 
             val path = result.data!!.data.toString()
@@ -277,16 +276,15 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
 
 
 
-    private var appRestoreResultLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
+    \1com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let {
-                activity?.contentResolver?.takePersistableUriPermission(
+                runCatching { activity?.contentResolver?.takePersistableUriPermission(
                     it,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or
                             Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
+                ) }
             }
             lifecycleScope.launch {
                 runCatching {

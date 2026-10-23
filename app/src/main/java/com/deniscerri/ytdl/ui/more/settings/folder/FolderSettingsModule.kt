@@ -53,11 +53,11 @@ object FolderSettingsModule: SettingModule {
                             intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
                             host.activityResultDelegate.launch(intent) { result ->
                                 result.data?.data?.let {
-                                    host.getHostContext().contentResolver?.takePersistableUriPermission(
+                                    runCatching { host.getHostContext().contentResolver?.takePersistableUriPermission(
                                         it,
                                         Intent.FLAG_GRANT_READ_URI_PERMISSION or
                                                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                                    )
+                                    ) }
                                 }
                                 changePath(host,pref, result.data, MUSIC_PATH_CODE)
                             }
@@ -81,11 +81,11 @@ object FolderSettingsModule: SettingModule {
                             intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
                             host.activityResultDelegate.launch(intent) { result ->
                                 result.data?.data?.let {
-                                    host.getHostContext().contentResolver?.takePersistableUriPermission(
+                                    runCatching { host.getHostContext().contentResolver?.takePersistableUriPermission(
                                         it,
                                         Intent.FLAG_GRANT_READ_URI_PERMISSION or
                                                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                                    )
+                                    ) }
                                 }
                                 changePath(host, pref, result.data, VIDEO_PATH_CODE)
                             }
@@ -109,11 +109,11 @@ object FolderSettingsModule: SettingModule {
                             intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
                             host.activityResultDelegate.launch(intent) { result ->
                                 result.data?.data?.let {
-                                    host.getHostContext().contentResolver?.takePersistableUriPermission(
+                                    runCatching { host.getHostContext().contentResolver?.takePersistableUriPermission(
                                         it,
                                         Intent.FLAG_GRANT_READ_URI_PERMISSION or
                                                 Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                                    )
+                                    ) }
                                 }
                                 changePath(host,pref, result.data, COMMAND_PATH_CODE)
                             }
@@ -141,11 +141,11 @@ object FolderSettingsModule: SettingModule {
                                 intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
                                 host.activityResultDelegate.launch(intent) { result ->
                                     result.data?.data?.let {
-                                        host.getHostContext().contentResolver?.takePersistableUriPermission(
+                                        runCatching { host.getHostContext().contentResolver?.takePersistableUriPermission(
                                             it,
                                             Intent.FLAG_GRANT_READ_URI_PERMISSION or
                                                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                                        )
+                                        ) }
                                     }
                                     changePath(host, pref, result.data, CACHE_PATH_CODE)
                                 }

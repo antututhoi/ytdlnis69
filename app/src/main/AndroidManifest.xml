@@ -27,6 +27,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <queries>
+        <!-- MiXplorer file manager, used as folder chooser when installed -->
+        <package android:name="com.mixplorer.silver" />
+        <package android:name="com.mixplorer" />
         <!-- YTDLnis recognized packages -->
         <package android:name="com.deniscerri.ytdl.python" />
         <package android:name="com.deniscerri.ytdl.ffmpeg" />

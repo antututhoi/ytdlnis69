@@ -26,6 +26,14 @@
         app:key="cache_path"
         app:title="@string/cache_directory" />
 
+    <SwitchPreferenceCompat
+        android:widgetLayout="@layout/preferece_material_switch"
+        app:defaultValue="true"
+        app:icon="@drawable/baseline_folder_24"
+        app:key="use_mixplorer_picker"
+        app:summary="@string/use_mixplorer_picker_summary"
+        app:title="@string/use_mixplorer_picker" />
+
     <Preference
         app:icon="@drawable/ic_access_folder"
         app:key="access_all_files"

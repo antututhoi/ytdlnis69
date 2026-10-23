@@ -22,7 +22,7 @@ class WelcomeIntroFragment : Fragment(R.layout.fragment_welcome_intro) {
     private lateinit var restoreProgress: View
 
     private val restoreLauncher =
-        registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        registerForActivityResult(com.deniscerri.ytdl.util.MiXplorerPicker.OpenOne()) { uri: Uri? ->
             if (uri != null) restore(uri)
         }
 

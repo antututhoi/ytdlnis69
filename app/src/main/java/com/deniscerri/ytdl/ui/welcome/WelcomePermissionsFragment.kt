@@ -53,16 +53,6 @@ class WelcomePermissionsFragment : Fragment(R.layout.fragment_welcome_permission
         lateinit var summaryView: TextView
     }
 
-    /** Same as the plain tree picker, but the grant can be kept across restarts. */
-    private class PersistableTree : ActivityResultContracts.OpenDocumentTree() {
-        override fun createIntent(context: Context, input: Uri?): Intent =
-            super.createIntent(context, input).addFlags(
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
-                        Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
-            )
-    }
-
     // folder preferences a restored backup may point to, with the title shown for each
     private val folderPrefs = listOf(
         Triple("music_path", R.drawable.ic_music_downloaded, R.string.music_directory),
@@ -75,7 +65,7 @@ class WelcomePermissionsFragment : Fragment(R.layout.fragment_welcome_permission
 
     private var pendingFolderKey: String? = null
 
-    private val folderLauncher = registerForActivityResult(PersistableTree()) { uri ->
+    private val folderLauncher = registerForActivityResult(com.deniscerri.ytdl.util.MiXplorerPicker.PersistableTree()) { uri ->
         val key = pendingFolderKey
         pendingFolderKey = null
         if (uri != null && key != null) {

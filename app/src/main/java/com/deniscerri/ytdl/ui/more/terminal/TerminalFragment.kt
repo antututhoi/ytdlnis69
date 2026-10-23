@@ -373,16 +373,15 @@ class TerminalFragment : Fragment() {
             "\n]"
 
 
-    private var commandPathResultLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
+    \1com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let {
-                requireActivity().contentResolver?.takePersistableUriPermission(
+                runCatching { requireActivity().contentResolver?.takePersistableUriPermission(
                     it,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or
                             Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
+                ) }
             }
             writeSpaced("\"${FileUtil.formatPath(result.data?.data.toString())}\" ")
         }

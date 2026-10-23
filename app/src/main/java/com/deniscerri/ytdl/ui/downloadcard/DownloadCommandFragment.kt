@@ -295,16 +295,15 @@ class DownloadCommandFragment(private val resultItem: ResultItem? = null, privat
     }
 
 
-    private var commandPathResultLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
+    \1com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let {
-                activity?.contentResolver?.takePersistableUriPermission(
+                runCatching { activity?.contentResolver?.takePersistableUriPermission(
                     it,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or
                             Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                )
+                ) }
             }
             downloadItem.downloadPath = result.data?.data.toString()
             saveDir.editText?.setText(FileUtil.formatPath(result.data?.data.toString()), TextView.BufferType.EDITABLE)

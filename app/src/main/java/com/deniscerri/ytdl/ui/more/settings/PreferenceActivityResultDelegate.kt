@@ -15,7 +15,7 @@ import com.deniscerri.ytdl.R
 class PreferenceActivityResultDelegate(caller: ActivityResultCaller) {
     private var pendingCallback : ((result: ActivityResult) -> Unit)? = null
 
-    private val launcher = caller.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    private val launcher = caller.registerForActivityResult(com.deniscerri.ytdl.util.MiXplorerPicker.Contract()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             pendingCallback?.invoke(result)
         }

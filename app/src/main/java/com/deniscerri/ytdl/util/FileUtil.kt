@@ -95,6 +95,13 @@ object FileUtil {
     fun formatPath(path: String) : String {
         var dataValue = path
         if (dataValue.startsWith("/storage/")) return dataValue
+        if (isForeignProvider(dataValue)) {
+            // Folder chosen with another file manager (e.g. MiXplorer): show its own folder id.
+            return runCatching {
+                val treeId = android.provider.DocumentsContract.getTreeDocumentId(dataValue.toUri())
+                URLDecoder.decode(treeId, StandardCharsets.UTF_8.name())
+            }.getOrDefault(dataValue)
+        }
         dataValue = dataValue.replace("content://com.android.externalstorage.documents/tree/", "")
         dataValue = dataValue.replace("raw:/storage/", "")
         dataValue = dataValue.replace("^/document/".toRegex(), "")
