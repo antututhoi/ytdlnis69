@@ -256,7 +256,8 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    \1com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
+    private var backupPathResultLauncher = registerForActivityResult(
+        com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let {
@@ -276,7 +277,8 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
 
 
 
-    \1com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
+    private var appRestoreResultLauncher = registerForActivityResult(
+        com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let {

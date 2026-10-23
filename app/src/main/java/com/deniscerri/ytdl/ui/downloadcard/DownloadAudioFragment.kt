@@ -468,7 +468,8 @@ class DownloadAudioFragment(private var resultItem: ResultItem? = null, private 
         onViewCreated(requireView(),savedInstanceState = state)
     }
 
-    \1com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
+    private var pathResultLauncher = registerForActivityResult(
+        com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let {

@@ -295,7 +295,8 @@ class DownloadCommandFragment(private val resultItem: ResultItem? = null, privat
     }
 
 
-    \1com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
+    private var commandPathResultLauncher = registerForActivityResult(
+        com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let {

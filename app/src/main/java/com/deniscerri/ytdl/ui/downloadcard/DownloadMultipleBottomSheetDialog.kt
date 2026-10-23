@@ -1125,7 +1125,8 @@ class DownloadMultipleBottomSheetDialog : BottomSheetDialogFragment(), Configure
         bottomAppBar.menu.children.forEach { m -> m.isEnabled = !loading }
     }
 
-    \1com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
+    private var pathResultLauncher = registerForActivityResult(
+        com.deniscerri.ytdl.util.MiXplorerPicker.Contract()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let {
