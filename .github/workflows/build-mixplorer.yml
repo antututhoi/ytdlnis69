@@ -22,6 +22,8 @@ jobs:
 
       - name: Build
         run: |
+          touch keystore.properties
+          touch local.properties
           chmod +x gradlew
           ./gradlew assembleGithubRelease --warning-mode all
 
