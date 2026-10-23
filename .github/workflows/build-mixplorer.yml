@@ -1,0 +1,32 @@
+name: Build (MiXplorer fork)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'corretto'
+          cache: 'gradle'
+
+      - name: Build
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleGithubRelease --warning-mode all
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ytdlnis-mixplorer-apks
+          path: app/build/outputs/apk/github/release/*.apk
