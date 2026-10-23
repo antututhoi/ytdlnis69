@@ -40,6 +40,9 @@ object MiXplorerPicker {
     @Volatile
     private var lastRoute = Route.NONE
 
+    @Volatile
+    private var appContext: Context? = null
+
     private fun findPackage(context: Context, build: (String) -> Intent): Intent? {
         for (pkg in PACKAGES) {
             if (!isResolvable(context, pkg)) continue
@@ -59,6 +62,7 @@ object MiXplorerPicker {
      */
     fun prepare(context: Context, intent: Intent): Intent {
         lastRoute = Route.NONE
+        appContext = context.applicationContext
         if (intent.action !in ACTIONS || !isEnabled(context)) return intent
         if (!isInstalled(context)) return intent
 
@@ -96,6 +100,9 @@ object MiXplorerPicker {
     private fun normalize(resultCode: Int, data: Intent?): Intent? {
         val route = lastRoute
         lastRoute = Route.NONE
+        if (route != Route.NONE) {
+            appContext?.let { toast(it, "MiXplorer result: code=$resultCode data=${data?.data} extras=${data?.extras?.keySet()}") }
+        }
         if (data == null || (route != Route.FOLDER_RESOURCE && route != Route.OI_DIRECTORY)) return data
         val uri = data.data ?: return data
         val path = when (uri.scheme) {
