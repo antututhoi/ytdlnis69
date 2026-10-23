@@ -41,6 +41,53 @@ object MiXplorerPicker {
     @Volatile
     private var pickingFolder = false
 
+    @Volatile
+    private var appContext: Context? = null
+
+    /** Storage roots on this phone, e.g. /storage/emulated/0 and /storage/3035-4269. */
+    private fun storageRoots(context: Context): List<String> {
+        val roots = mutableListOf<String>()
+        context.getExternalFilesDirs(null).filterNotNull().forEach { dir ->
+            val p = dir.absolutePath
+            val i = p.indexOf("/Android/")
+            if (i > 0) roots.add(p.substring(0, i))
+        }
+        runCatching {
+            java.io.File("/storage").listFiles()?.forEach { f ->
+                if (f.isDirectory && f.name != "self" && f.name != "emulated") roots.add(f.absolutePath)
+            }
+        }
+        if (roots.none { it.startsWith("/storage/emulated/") }) roots.add(0, "/storage/emulated/0")
+        return roots.distinct()
+    }
+
+    /**
+     * MiXplorer returns its own address, e.g. content://com.mixplorer.silver.file/515455478!!/DL/x.
+     * Turn it into a real folder path like /storage/3035-4269/DL/x.
+     */
+    private fun mixplorerUriToPath(context: Context, uri: Uri): String? {
+        // 1. Ask MiXplorer for the real path.
+        runCatching {
+            context.contentResolver.query(uri, arrayOf("_data"), null, null, null)?.use { c ->
+                if (c.moveToFirst()) {
+                    val v = c.getString(0)
+                    if (!v.isNullOrBlank() && v.startsWith("/")) return v.trimEnd('/')
+                }
+            }
+        }
+        // 2. Take the part after "!!" and find which storage holds that folder.
+        val decoded = Uri.decode(uri.encodedPath ?: return null)
+        val marker = decoded.indexOf("!!")
+        val relative = (if (marker >= 0) decoded.substring(marker + 2) else decoded).trim('/')
+        if (relative.isEmpty()) return null
+        if (relative.startsWith("storage/")) return "/" + relative
+        for (root in storageRoots(context)) {
+            val f = java.io.File(root, relative)
+            if (f.isDirectory) return f.absolutePath
+        }
+        return null
+    }
+
     private fun toast(context: Context, text: String) {
         android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
     }
@@ -53,6 +100,7 @@ object MiXplorerPicker {
      */
     fun prepare(context: Context, intent: Intent): Intent {
         pickingFolder = false
+        appContext = context.applicationContext
         if (intent.action !in ACTIONS || !isEnabled(context)) return intent
         val pkg = PACKAGES.firstOrNull { pkg ->
             runCatching {
@@ -76,7 +124,14 @@ object MiXplorerPicker {
         val uri = data.data ?: return data
         val path = when (uri.scheme) {
             "file", null, "folder", "directory" -> uri.path
+            "content" -> if (uri.authority.orEmpty().startsWith("com.mixplorer")) {
+                appContext?.let { mixplorerUriToPath(it, uri) }
+            } else null
             else -> null
+        }
+        if (path == null && uri.authority.orEmpty().startsWith("com.mixplorer")) {
+            appContext?.let { toast(it, "Could not read the folder from MiXplorer: $uri") }
+            return null
         }
         return if (path != null) Intent().setData(Uri.parse(path.trimEnd('/'))) else data
     }
@@ -86,7 +141,11 @@ object MiXplorerPicker {
         override fun createIntent(context: Context, input: Intent): Intent = prepare(context, input)
 
         override fun parseResult(resultCode: Int, intent: Intent?): ActivityResult =
-            ActivityResult(resultCode, normalize(intent))
+            normalize(intent).let { fixed ->
+                // A MiXplorer answer that could not be read counts as "cancelled", so nothing breaks.
+                if (intent != null && fixed == null) ActivityResult(android.app.Activity.RESULT_CANCELED, null)
+                else ActivityResult(resultCode, fixed)
+            }
     }
 
     /** Folder picker contract that keeps the grant across restarts. */
