@@ -35,82 +35,36 @@ object MiXplorerPicker {
     fun isEnabled(context: Context): Boolean =
         PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PREF_KEY, true)
 
-    private enum class Route { NONE, TREE, FOLDER_RESOURCE, OI_DIRECTORY, DOCUMENT }
-
-    @Volatile
-    private var lastRoute = Route.NONE
-
-    @Volatile
-    private var appContext: Context? = null
-
-    private fun findPackage(context: Context, build: (String) -> Intent): Intent? {
-        for (pkg in PACKAGES) {
-            if (!isResolvable(context, pkg)) continue
-            val intent = build(pkg)
-            if (intent.resolveActivity(context.packageManager) != null) return intent
-        }
-        return null
-    }
-
     private fun toast(context: Context, text: String) {
         android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
     }
 
     /**
-     * @return the intent addressed to MiXplorer when enabled and installed, otherwise the same intent.
-     * MiXplorer may not answer the system folder intent, so the older folder-picking intents are tried too.
+     * Files: the request is sent straight to MiXplorer (it answers OPEN_DOCUMENT / CREATE_DOCUMENT).
+     * Folders: MiXplorer does not return a folder to other apps, so the system chooser is used,
+     * pointed at MiXplorer's storage entry (its document provider) when it is installed and switched on.
      */
     fun prepare(context: Context, intent: Intent): Intent {
-        lastRoute = Route.NONE
-        appContext = context.applicationContext
         if (intent.action !in ACTIONS || !isEnabled(context)) return intent
-        if (!isInstalled(context)) return intent
-
-        // 1. The same intent, addressed to MiXplorer.
-        findPackage(context) { pkg -> Intent(intent).setPackage(pkg) }?.let {
-            lastRoute = if (intent.action == Intent.ACTION_OPEN_DOCUMENT_TREE) Route.TREE else Route.DOCUMENT
-            toast(context, "MiXplorer")
-            return it
-        }
+        val pkg = PACKAGES.firstOrNull { isResolvable(context, it) } ?: return intent
 
         if (intent.action == Intent.ACTION_OPEN_DOCUMENT_TREE) {
-            // 2. Folder picking the way file managers have long offered it.
-            findPackage(context) { pkg ->
-                Intent(Intent.ACTION_GET_CONTENT).setType("resource/folder").setPackage(pkg)
-            }?.let {
-                lastRoute = Route.FOLDER_RESOURCE
-                toast(context, "MiXplorer (folder mode)")
-                return it
+            val copy = Intent(intent)
+            if (android.os.Build.VERSION.SDK_INT >= 26) {
+                runCatching {
+                    val authority = "com.mixplorer.doc"
+                    copy.putExtra(
+                        android.provider.DocumentsContract.EXTRA_INITIAL_URI,
+                        android.provider.DocumentsContract.buildRootUri(authority, "primary")
+                    )
+                }
             }
-            findPackage(context) { pkg ->
-                Intent("org.openintents.action.PICK_DIRECTORY")
-                    .setData(Uri.parse("file://" + android.os.Environment.getExternalStorageDirectory().absolutePath))
-                    .setPackage(pkg)
-            }?.let {
-                lastRoute = Route.OI_DIRECTORY
-                toast(context, "MiXplorer (folder mode 2)")
-                return it
-            }
-            toast(context, "MiXplorer cannot choose folders here, using the system chooser")
+            toast(context, "Choose MiXplorer in the side menu")
+            return copy
         }
-        return intent
-    }
 
-    /** A folder chosen in the older ways comes back as a path, which this app accepts as a folder. */
-    private fun normalize(resultCode: Int, data: Intent?): Intent? {
-        val route = lastRoute
-        lastRoute = Route.NONE
-        if (route != Route.NONE) {
-            appContext?.let { toast(it, "MiXplorer result: code=$resultCode data=${data?.data} extras=${data?.extras?.keySet()}") }
-        }
-        if (data == null || (route != Route.FOLDER_RESOURCE && route != Route.OI_DIRECTORY)) return data
-        val uri = data.data ?: return data
-        val path = when (uri.scheme) {
-            "file" -> uri.path
-            null -> uri.path
-            else -> null
-        }
-        return if (path != null) Intent().setData(Uri.parse(path.trimEnd('/'))) else data
+        val copy = Intent(intent).setPackage(pkg)
+        return if (copy.resolveActivity(context.packageManager) != null) copy else intent
     }
 
     /** Replacement for ActivityResultContracts.StartActivityForResult() at picker launch sites. */
@@ -118,7 +72,7 @@ object MiXplorerPicker {
         override fun createIntent(context: Context, input: Intent): Intent = prepare(context, input)
 
         override fun parseResult(resultCode: Int, intent: Intent?): ActivityResult =
-            ActivityResult(resultCode, normalize(resultCode, intent))
+            ActivityResult(resultCode, intent)
     }
 
     /** Folder picker contract that keeps the grant across restarts. */
