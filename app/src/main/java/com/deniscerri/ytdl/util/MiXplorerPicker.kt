@@ -90,11 +90,11 @@ object MiXplorerPicker {
     }
 
     /** Folder picker contract that keeps the grant across restarts. */
-    class PersistableTree : ActivityResultContracts.OpenDocumentTree() {
+    class PersistableTree : ActivityResultContract<Uri?, Uri?>() {
         override fun createIntent(context: Context, input: Uri?): Intent =
             prepare(
                 context,
-                super.createIntent(context, null).addFlags(
+                Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).addFlags(
                     Intent.FLAG_GRANT_READ_URI_PERMISSION or
                             Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
                             Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
