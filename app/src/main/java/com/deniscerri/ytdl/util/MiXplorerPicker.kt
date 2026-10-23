@@ -59,12 +59,17 @@ object MiXplorerPicker {
                     )
                 }
             }
-            toast(context, "Choose MiXplorer in the side menu")
+            toast(context, "Choose MiXplorer in the side menu (turn on its Document provider first)")
             return copy
         }
 
-        val copy = Intent(intent).setPackage(pkg)
-        return if (copy.resolveActivity(context.packageManager) != null) copy else intent
+        // Address MiXplorer's browser screen directly, so the file type does not need to match its filters.
+        val copy = Intent(intent).setClassName(pkg, "com.mixplorer.activities.BrowseActivity")
+        val known = runCatching {
+            context.packageManager.getActivityInfo(copy.component!!, 0)
+            true
+        }.getOrDefault(false)
+        return if (known) copy else intent
     }
 
     /** Replacement for ActivityResultContracts.StartActivityForResult() at picker launch sites. */
