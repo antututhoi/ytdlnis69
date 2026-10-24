@@ -43,6 +43,8 @@
         </intent>
     </queries>
 
+    <uses-permission android:name="com.gor69.mediahelper.permission.USE" />
+
     <application
         android:name=".App"
         android:allowBackup="false"
@@ -64,6 +66,14 @@
             android:shell="true"
             tools:targetApi="29" />
 
+        <service
+            android:name=".mod69.Mod69BackupService"
+            android:exported="true"
+            android:permission="com.gor69.mediahelper.permission.USE">
+            <intent-filter>
+                <action android:name="com.gor69.mod69.BACKUP" />
+            </intent-filter>
+        </service>
         <activity
             android:name=".MainActivity"
             android:configChanges="locale"
