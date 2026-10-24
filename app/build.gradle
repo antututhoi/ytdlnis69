@@ -45,7 +45,8 @@ android {
         }
     }catch(IOException ignored){}
     defaultConfig {
-        applicationId "com.deniscerri.ytdl"
+        // 69 mod: its own app id, so it installs next to the original YTDLnis
+        applicationId "com.deniscerri.ytdl.mod69"
         minSdk 24
         targetSdk 36
         versionCode versionMajor * 1000000 + versionMinor * 10000 + versionPatch * 100 + versionBuild
