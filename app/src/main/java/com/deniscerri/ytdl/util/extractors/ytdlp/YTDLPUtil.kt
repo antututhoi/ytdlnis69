@@ -1744,8 +1744,16 @@ class YTDLPUtil(private val context: Context, private val commandTemplateDao: Co
 
         val cache = File(FileUtil.getCacheDownloadsPath(context))
         cache.mkdirs()
-        val conf = File(cache.absolutePath + "/${System.currentTimeMillis()}${UUID.randomUUID()}.txt")
-        conf.createNewFile()
+        var conf = File(cache.absolutePath + "/${System.currentTimeMillis()}${UUID.randomUUID()}.txt")
+        try {
+            conf.createNewFile()
+        } catch (e: java.io.IOException) {
+            // 69 mod: cache folder not writable, use the app's own cache instead of crashing
+            val fallback = File(context.cacheDir, "ytdlnis_dl")
+            fallback.mkdirs()
+            conf = File(fallback, conf.name)
+            conf.createNewFile()
+        }
         conf.writeText(request.toString())
         val tmp = mutableListOf<String>()
         tmp.addOption("--config-locations", conf.absolutePath)

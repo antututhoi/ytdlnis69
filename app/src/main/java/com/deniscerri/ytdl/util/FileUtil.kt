@@ -405,7 +405,12 @@ object FileUtil {
     fun getCachePath(context: Context) : String {
         val preference = PreferenceManager.getDefaultSharedPreferences(context).getString("cache_path", "")
         if (!preference.isNullOrBlank()) {
-            return formatPath(preference)
+            val chosen = formatPath(preference)
+            // 69 mod: use the chosen cache folder only if it really exists and can be written to;
+            // otherwise fall back to the app's own folder (a bad folder made every download crash).
+            val dir = File(chosen)
+            val usable = runCatching { (dir.isDirectory || dir.mkdirs()) && dir.canWrite() }.getOrDefault(false)
+            if (usable) return chosen
         }
 
         val externalPath = context.getExternalFilesDir(null)
