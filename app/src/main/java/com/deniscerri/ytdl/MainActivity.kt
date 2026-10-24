@@ -104,6 +104,7 @@ class MainActivity : BaseActivity() {
             finish()
             return
         }
+        window.decorView.post { com.deniscerri.ytdl.util.ErrorReport.showIfAny(this) }
         CrashListener(this).registerExceptionHandler()
         ThemeUtil.updateTheme(this)
         window.navigationBarColor = SurfaceColors.SURFACE_2.getColor(this)

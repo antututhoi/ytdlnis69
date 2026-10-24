@@ -35,6 +35,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        com.deniscerri.ytdl.util.ErrorReport.install(this)
 
         val sharedPreferences =  PreferenceManager.getDefaultSharedPreferences(this@App)
         setDefaultValues()
@@ -66,6 +67,7 @@ class App : Application() {
                     .forEach { scheduler.schedule(it) }         // idempotent: FLAG_UPDATE_CURRENT updates in place
 
             }catch (e: Exception){
+                com.deniscerri.ytdl.util.ErrorReport.record(this@App, "Start-up error", e)
                 Looper.prepare().runCatching {
                     Toast.makeText(this@App, e.message, Toast.LENGTH_SHORT).show()
                 }

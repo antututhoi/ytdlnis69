@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 class CrashListener(private val context: Context) : Thread.UncaughtExceptionHandler {
 
     override fun uncaughtException(p0: Thread, p1: Throwable) {
+        ErrorReport.record(context, "Crash in thread ${p0.name}", p1)
         CoroutineScope(SupervisorJob()).launch(Dispatchers.IO) {
             createLog("${p1.message}\n\n${p1.stackTrace.joinToString("\n")}")
         }

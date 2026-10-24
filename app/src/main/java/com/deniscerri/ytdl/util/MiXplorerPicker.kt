@@ -167,11 +167,7 @@ object MiXplorerPicker {
         if (intent.action == Intent.ACTION_OPEN_DOCUMENT_TREE) {
             pickingFolder = true
             val pick = Intent(PICK_DIRECTORY).setClassName(pkg, BROWSE)
-            // Start at the last folder chosen here. "directory:" is used because Android blocks "file:" addresses.
-            val last = PreferenceManager.getDefaultSharedPreferences(context).getString(LAST_FOLDER_KEY, null)
-            if (!last.isNullOrBlank() && java.io.File(last).isDirectory) {
-                pick.data = Uri.Builder().scheme("directory").path(last).build()
-            }
+            // No start folder: MiXplorer opens at its own last location.
             return pick
         }
         return Intent(intent).setClassName(pkg, BROWSE)
@@ -183,6 +179,13 @@ object MiXplorerPicker {
         pickingFolder = false
         if (!folder || data == null) return data
         val uri = data.data ?: return data
+        // Remember exactly what MiXplorer returned, so it reopens at the last folder picked (any folder setting).
+        appContext?.let {
+            PreferenceManager.getDefaultSharedPreferences(it).edit().putString(
+                LAST_FOLDER_KEY,
+                if (uri.scheme == "content") uri.toString() else (uri.path ?: uri.toString()).trimEnd('/')
+            ).apply()
+        }
         val path = when (uri.scheme) {
             "file", null, "folder", "directory" -> uri.path
             "content" -> if (uri.authority.orEmpty().startsWith("com.mixplorer")) {
@@ -201,9 +204,6 @@ object MiXplorerPicker {
             return null
         }
         if (path != null && path.startsWith("content://")) return Intent().setData(Uri.parse(path))
-        if (path != null) appContext?.let {
-            PreferenceManager.getDefaultSharedPreferences(it).edit().putString(LAST_FOLDER_KEY, path.trimEnd('/')).apply()
-        }
         return if (path != null) Intent().setData(Uri.parse(path.trimEnd('/'))) else data
     }
 
