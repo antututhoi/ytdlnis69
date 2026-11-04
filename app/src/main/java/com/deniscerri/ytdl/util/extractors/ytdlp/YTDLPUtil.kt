@@ -817,6 +817,18 @@ class YTDLPUtil(private val context: Context, private val commandTemplateDao: Co
     }
 
 
+    /** 69 mod: the title YouTube shows in another language (its own translation), or null. */
+    fun getTranslatedTitle(url: String, lang: String = "en"): String? = kotlin.runCatching {
+        val request = YTDLRequest(url)
+        request.addOption("--skip-download")
+        request.addOption("--no-playlist")
+        request.addOption("--print", "title")
+        request.setYoutubeExtractorArgs(url)
+        request.addOption("--extractor-args", "youtube:lang=$lang")
+        request.applyDefaultOptionsForFetchingData(url)
+        RuntimeManager.getInstance().execute(request).out.trim().lines().lastOrNull { it.isNotBlank() }
+    }.getOrNull()
+
     private fun YTDLRequest.setYoutubeExtractorArgs(url: String?) {
         val extractorArgs = mutableListOf<String>()
         val playerClients = mutableSetOf<String>()

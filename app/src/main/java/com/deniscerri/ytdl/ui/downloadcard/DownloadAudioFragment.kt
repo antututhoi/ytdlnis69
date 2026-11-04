@@ -160,6 +160,7 @@ class DownloadAudioFragment(private var resultItem: ResultItem? = null, private 
                     }
                 }
 
+                Mod69TitleSwitch.attach(this@DownloadAudioFragment, title, url.ifBlank { downloadItem.url }) { resultItem?.title ?: downloadItem.title }
                 title.setEndIconOnClickListener {
                     if (resultItem != null){
                         title.editText?.setText(resultItem?.title)

@@ -27,6 +27,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <queries>
+        <package android:name="com.gor69.mediahelper" />
         <!-- MiXplorer file manager, used as folder chooser when installed -->
         <package android:name="com.mixplorer.silver" />
         <package android:name="com.mixplorer" />
