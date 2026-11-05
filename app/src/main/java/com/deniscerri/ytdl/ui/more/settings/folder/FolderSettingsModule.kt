@@ -180,6 +180,17 @@ object FolderSettingsModule: SettingModule {
                     isEnabled = preferences.getStringSet("save_subdirectory", setOf())!!.isEmpty()
                 }
             }
+            // 69 mod
+            "mod69_file_picker" -> {
+                com.deniscerri.ytdl.util.MiXplorerPicker.isEnabled(context) // migrates the old switch
+                pref.summary = com.deniscerri.ytdl.util.Mod69Picker.choiceName(context)
+                pref.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+                    com.deniscerri.ytdl.util.Mod69Picker.showSettingDialog(context) {
+                        pref.summary = com.deniscerri.ytdl.util.Mod69Picker.choiceName(context)
+                    }
+                    true
+                }
+            }
             "access_all_files" -> {
                 pref.apply {
                     if ((Build.VERSION.SDK_INT >= 30 && Environment.isExternalStorageManager()) ||

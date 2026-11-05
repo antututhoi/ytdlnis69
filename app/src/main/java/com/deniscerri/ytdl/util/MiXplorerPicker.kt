@@ -32,8 +32,16 @@ object MiXplorerPicker {
         true
     }.getOrDefault(false)
 
-    fun isEnabled(context: Context): Boolean =
-        PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PREF_KEY, true)
+    /** 69 mod: the picker is now chosen in "Folder / file picker" (69-Material Files / MiXplorer / phone). */
+    fun isEnabled(context: Context): Boolean {
+        val sp = context.getSharedPreferences("mod69_picker", Context.MODE_PRIVATE)
+        if (!sp.contains("choice")) {
+            // keep what the old switch did
+            val old = PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PREF_KEY, true)
+            Mod69Picker.set(context, if (old && isInstalled(context)) Mod69Picker.MIXPLORER else Mod69Picker.MATERIAL_FILES)
+        }
+        return Mod69Picker.choice(context) == Mod69Picker.MIXPLORER
+    }
 
     private const val BROWSE = "com.mixplorer.activities.BrowseActivity"
     private const val PICK_DIRECTORY = "org.openintents.action.PICK_DIRECTORY"
@@ -156,13 +164,14 @@ object MiXplorerPicker {
     fun prepare(context: Context, intent: Intent): Intent {
         pickingFolder = false
         appContext = context.applicationContext
-        if (intent.action !in ACTIONS || !isEnabled(context)) return intent
+        if (intent.action !in ACTIONS) return intent
+        if (!isEnabled(context)) return Mod69Picker.apply(context, intent)
         val pkg = PACKAGES.firstOrNull { pkg ->
             runCatching {
                 context.packageManager.getActivityInfo(android.content.ComponentName(pkg, BROWSE), 0)
                 true
             }.getOrDefault(false)
-        } ?: return intent
+        } ?: return Mod69Picker.apply(context, intent)
 
         if (intent.action == Intent.ACTION_OPEN_DOCUMENT_TREE) {
             pickingFolder = true
