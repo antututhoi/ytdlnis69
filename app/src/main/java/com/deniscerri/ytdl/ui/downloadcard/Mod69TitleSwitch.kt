@@ -20,6 +20,9 @@ import kotlinx.coroutines.withContext
 object Mod69TitleSwitch {
     private val englishCache = mutableMapOf<String, String>()
 
+    /** Letters that are not Latin (Korean, Japanese, Chinese, Thai, Cyrillic, Arabic, ...). */
+    private val NON_LATIN = Regex("[\\p{IsHangul}\\p{IsHan}\\p{IsHiragana}\\p{IsKatakana}\\p{IsThai}\\p{IsCyrillic}\\p{IsArabic}\\p{IsHebrew}\\p{IsDevanagari}\\p{IsGreek}]")
+
     fun attach(fragment: Fragment, title: TextInputLayout, url: String, originalTitle: () -> String?) {
         val first = originalTitle()
         val original = { first }
@@ -27,6 +30,21 @@ object Mod69TitleSwitch {
         val ctx = fragment.requireContext()
         title.startIconDrawable = AppCompatResources.getDrawable(ctx, R.drawable.ic_translate)
         title.startIconContentDescription = "Title language"
+        // 69 mod: non-English title -> use YouTube's English title right away (icon switches back)
+        if (first != null && NON_LATIN.containsMatchIn(first)) {
+            fragment.viewLifecycleOwner.lifecycleScope.launch {
+                val en = englishCache[url] ?: withContext(Dispatchers.IO) {
+                    val app = ctx.applicationContext
+                    runCatching {
+                        YTDLPUtil(app, DBManager.getInstance(app).commandTemplateDao).getTranslatedTitle(url)
+                    }.getOrNull()
+                }
+                if (!fragment.isAdded || en.isNullOrBlank() || en == first) return@launch
+                englishCache[url] = en
+                // only if the user did not change the title meanwhile
+                if (title.editText?.text?.toString() == first) title.editText?.setText(en)
+            }
+        }
         title.setStartIconOnClickListener { anchor ->
             val menu = PopupMenu(ctx, anchor)
             menu.menu.add(0, 1, 0, "Original title")

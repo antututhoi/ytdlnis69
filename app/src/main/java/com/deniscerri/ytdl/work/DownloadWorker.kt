@@ -405,13 +405,6 @@ class DownloadWorker(
                                 }.distinct().toMutableList()
                                 finalPaths.sortBy { p -> File(p).lastModified() }
 
-                                // 69 mod: shrink with 69-Media Helper (H.265 / WebM) if chosen for this download
-                                if (downloadItem.type == DownloadType.video && finalPaths.isNotEmpty()) {
-                                    finalPaths = com.deniscerri.ytdl.mod69.Mod69Shrink.process(context, downloadItem.url, finalPaths) { status ->
-                                        WorkerEventBus.post(WorkerProgress(100, status, downloadItem.id, downloadItem.logID))
-                                    }.toMutableList()
-                                }
-
                                 FileUtil.scanMedia(finalPaths, context)
 
                                 FileUtil.deleteConfigFiles(request)

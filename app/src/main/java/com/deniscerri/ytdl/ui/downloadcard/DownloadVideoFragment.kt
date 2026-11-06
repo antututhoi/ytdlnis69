@@ -172,7 +172,6 @@ class DownloadVideoFragment(private var resultItem: ResultItem? = null, private 
                     }
                 }
 
-                Mod69ShrinkChips.attach(this@DownloadVideoFragment, view, downloadItem.url)
                 Mod69TitleSwitch.attach(this@DownloadVideoFragment, title, url.ifBlank { downloadItem.url }) { resultItem?.title ?: downloadItem.title }
                 title.setEndIconOnClickListener {
                     if (resultItem != null){
